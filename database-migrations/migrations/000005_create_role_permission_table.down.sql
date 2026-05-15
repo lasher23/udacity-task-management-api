@@ -1,0 +1,1 @@
+DROP TABLE if exists role_permissions;

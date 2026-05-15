@@ -1,0 +1,24 @@
+-- Read rubric to late adjust to new structure
+DROP TABLE IF EXISTS role_permissions;
+
+CREATE TABLE role_permissions (
+    role_id       UUID NOT NULL,
+    permission_id UUID NOT NULL,
+    PRIMARY KEY (role_id, permission_id),
+    FOREIGN KEY (role_id)       REFERENCES roles(id)       ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+);
+
+-- admin
+INSERT INTO role_permissions (role_id, permission_id) VALUES
+('1c2d3e4f-5678-90ab-cdef-1234567890ab', 'a0000000-0000-0000-0000-000000000001'),
+('1c2d3e4f-5678-90ab-cdef-1234567890ab', 'a0000000-0000-0000-0000-000000000002'),
+('1c2d3e4f-5678-90ab-cdef-1234567890ab', 'a0000000-0000-0000-0000-000000000003'),
+('1c2d3e4f-5678-90ab-cdef-1234567890ab', 'a0000000-0000-0000-0000-000000000004'),
+('1c2d3e4f-5678-90ab-cdef-1234567890ab', 'a0000000-0000-0000-0000-000000000005'),
+('1c2d3e4f-5678-90ab-cdef-1234567890ab', 'a0000000-0000-0000-0000-000000000006'),
+('1c2d3e4f-5678-90ab-cdef-1234567890ab', 'a0000000-0000-0000-0000-000000000007'),
+-- user
+('2b3c4d5e-6789-01ab-cdef-2345678901bc', 'a0000000-0000-0000-0000-000000000001'),
+('2b3c4d5e-6789-01ab-cdef-2345678901bc', 'a0000000-0000-0000-0000-000000000002'),
+('2b3c4d5e-6789-01ab-cdef-2345678901bc', 'a0000000-0000-0000-0000-000000000007');
