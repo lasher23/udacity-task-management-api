@@ -44,6 +44,6 @@ func (h *AuthHandler) Token(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
-		"expires_in":    3600,
+		"expires_in":    int(services.TokenExpiry.Seconds()),
 	})
 }

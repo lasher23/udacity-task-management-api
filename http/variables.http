@@ -1,0 +1,10 @@
+### Shared variables — edit here, referenced in all other .http files
+# @host = http://localhost:8080/api/v1
+
+# Admin credentials (seeded in migration 000001)
+# @adminUser = admin
+# @adminPass = admin
+
+# Regular user credentials (created via 01_register.http)
+# @userUser  = user123
+# @userPass  = password123

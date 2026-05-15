@@ -23,11 +23,17 @@ func NewTaskHandler(db *gorm.DB, taskService services.TaskService) *TaskHandler 
 }
 
 func (h *TaskHandler) CreateTask(c *gin.Context) {
+	userID, ok := c.Get("user_id")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
 	var task models.Task
 	if err := c.ShouldBindJSON(&task); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	task.UserID = userID.(uuid.UUID)
 	created, err := h.taskService.CreateTask(h.db, &task)
 	if err != nil {
 		handleTaskError(c, err)
@@ -97,7 +103,34 @@ func (h *TaskHandler) GetTasksByUser(c *gin.Context) {
 }
 
 func (h *TaskHandler) GetTasks(c *gin.Context) {
-	tasks, err := h.taskService.GetTasks(h.db)
+	userID, ok := c.Get("user_id")
+	if !ok {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+	uid := userID.(uuid.UUID)
+
+	var user models.User
+	if err := h.db.Preload("Roles").Where("id = ?", uid).First(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load user"})
+		return
+	}
+
+	isAdmin := false
+	for _, role := range user.Roles {
+		if role.Name == "admin" {
+			isAdmin = true
+			break
+		}
+	}
+
+	var tasks []models.Task
+	var err error
+	if isAdmin {
+		tasks, err = h.taskService.GetTasks(h.db)
+	} else {
+		tasks, err = h.taskService.GetTasksByUser(h.db, uid)
+	}
 	if err != nil {
 		handleTaskError(c, err)
 		return

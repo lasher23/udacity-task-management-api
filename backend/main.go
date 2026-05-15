@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"strings"
 	"task-manager/backend/internal/handlers"
 	"task-manager/backend/internal/middleware"
 	"task-manager/backend/internal/repositories"
@@ -41,9 +42,14 @@ func main() {
 	r := gin.Default()
 
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3000", "http://host.docker.internal", "http://localhost:8081"},
+		// AllowOriginFunc allows any localhost port to handle both local dev
+		// and Docker port-mapped access without maintaining a static list.
+		AllowOriginFunc: func(origin string) bool {
+			return strings.HasPrefix(origin, "http://localhost") ||
+				strings.HasPrefix(origin, "http://host.docker.internal")
+		},
 		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept"},
 		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,

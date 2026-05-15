@@ -1,0 +1,171 @@
+### Paste tokens obtained from 02_auth.http here
+@admin_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzg4NTAyNzksImlzcyI6InRhc2stbWFuYWdlciIsInBlcm1pc3Npb25zIjpbInVzZXI6d3JpdGUiLCJ1c2VyOmRlbGV0ZSIsInByb2ZpbGU6cmVhZCIsInRhc2s6cmVhZCIsInRhc2s6d3JpdGUiLCJ0YXNrOmRlbGV0ZSIsInVzZXI6cmVhZCJdLCJyb2xlcyI6WyJhZG1pbiIsInVzZXIiXSwic3ViIjoiYmQwMDZkNDEtYWRlZC00MDQwLTk5MzQtMmJhNGU5MDllZjlhIiwidXNlcl9pZCI6ImJkMDA2ZDQxLWFkZWQtNDA0MC05OTM0LTJiYTRlOTA5ZWY5YSJ9.z0f9AJnUnnkcISeBBYIMPSuU3zTyyt9wI25IPMA2S50
+@user_token  = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3Nzg4NTAzMDYsImlzcyI6InRhc2stbWFuYWdlciIsInBlcm1pc3Npb25zIjpbInRhc2s6cmVhZCIsInRhc2s6d3JpdGUiLCJwcm9maWxlOnJlYWQiXSwicm9sZXMiOlsidXNlciJdLCJzdWIiOiIwMTllMmE4OS1jZTE5LTcwODItYTI2Ni00Y2JkOGFmMWM4NjMiLCJ1c2VyX2lkIjoiMDE5ZTJhODktY2UxOS03MDgyLWEyNjYtNGNiZDhhZjFjODYzIn0.pAcX7lKISRVq1Ip84pa8NalFckj4U92kqeteKu78tC4
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADMIN creates a task (admin-owned)
+# ─────────────────────────────────────────────────────────────────────────────
+
+### [ADMIN] Create task — returns 201; save the "id" as @admin_task_id below
+POST http://localhost:8080/api/v1/tasks
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "title":       "Admin Task",
+  "description": "A task created by admin",
+  "status":      "pending"
+}
+
+###
+@admin_task_id = 019e2b87-1fe3-7f2b-9b36-2698cecb052b
+
+# ─────────────────────────────────────────────────────────────────────────────
+# USER123 creates a task (user-owned)
+# ─────────────────────────────────────────────────────────────────────────────
+
+### [USER123] Create task — returns 201; save the "id" as @user_task_id below
+POST http://localhost:8080/api/v1/tasks
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "title":       "User123 Task",
+  "description": "A task created by user123",
+  "status":      "pending"
+}
+
+###
+@user_task_id = 019e2b92-6d3e-700d-825a-49afa04869c3
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /tasks — scoping check
+#   Admin  → sees ALL tasks (200 with both tasks)
+#   User   → sees ONLY their own tasks (200 with only the user123 task)
+# ─────────────────────────────────────────────────────────────────────────────
+
+### [ADMIN] List all tasks — expect: both tasks visible
+GET http://localhost:8080/api/v1/tasks
+Authorization: Bearer {{admin_token}}
+
+###
+
+### [USER123] List tasks — expect: only user123's task visible
+GET http://localhost:8080/api/v1/tasks
+Authorization: Bearer {{user_token}}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /tasks/:id — ownership check
+#   Owner of the task → 200
+#   Non-owner regular user → 403
+#   Admin (non-owner) → 200  (admin override)
+# ─────────────────────────────────────────────────────────────────────────────
+
+### [ADMIN] Get admin's own task — expect: 200
+GET http://localhost:8080/api/v1/tasks/{{admin_task_id}}
+Authorization: Bearer {{admin_token}}
+
+###
+
+### [ADMIN] Get user123's task — expect: 200 (admin can see any task)
+GET http://localhost:8080/api/v1/tasks/{{user_task_id}}
+Authorization: Bearer {{admin_token}}
+
+###
+
+### [USER123] Get own task — expect: 200
+GET http://localhost:8080/api/v1/tasks/{{user_task_id}}
+Authorization: Bearer {{user_token}}
+
+###
+
+### [USER123] Get admin's task — expect: 403 (not owner, not admin)
+GET http://localhost:8080/api/v1/tasks/{{admin_task_id}}
+Authorization: Bearer {{user_token}}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PUT /tasks/:id — ownership check
+# ─────────────────────────────────────────────────────────────────────────────
+
+### [USER123] Update own task — expect: 200
+PUT http://localhost:8080/api/v1/tasks/{{user_task_id}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "title":  "User123 Task (updated)",
+  "status": "in_progress"
+}
+
+###
+
+### [USER123] Update admin's task — expect: 403 (not owner, not admin)
+PUT http://localhost:8080/api/v1/tasks/{{admin_task_id}}
+Content-Type: application/json
+Authorization: Bearer {{user_token}}
+
+{
+  "title": "Hacked admin task"
+}
+
+###
+
+### [ADMIN] Update any task — expect: 200
+PUT http://localhost:8080/api/v1/tasks/{{user_task_id}}
+Content-Type: application/json
+Authorization: Bearer {{admin_token}}
+
+{
+  "status": "done"
+}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GET /users/:user_id/tasks — ownership check
+#   Route protected with withOwnership=true, same rules apply.
+# ─────────────────────────────────────────────────────────────────────────────
+
+### Decode user123's user_id from the JWT at https://jwt.io
+### and paste below
+@user123_id = 019e2a89-ce19-7082-a266-4cbd8af1c863
+@admin_id   = bd006d41-aded-4040-9934-2ba4e909ef9a
+
+### [USER123] Get own user tasks — expect: 200
+GET http://localhost:8080/api/v1/users/{{user123_id}}/tasks
+Authorization: Bearer {{user_token}}
+
+###
+
+### [USER123] Get admin's tasks via user route — expect: 403
+GET http://localhost:8080/api/v1/users/{{admin_id}}/tasks
+Authorization: Bearer {{user_token}}
+
+###
+
+### [ADMIN] Get user123's tasks via user route — expect: 200 (admin override)
+GET http://localhost:8080/api/v1/users/{{user123_id}}/tasks
+Authorization: Bearer {{admin_token}}
+
+###
+
+# ─────────────────────────────────────────────────────────────────────────────
+# DELETE /tasks/:id — no ownership check, requires task:delete permission
+#   Only admin role has task:delete
+# ─────────────────────────────────────────────────────────────────────────────
+
+### [USER123] Delete a task — expect: 403 (no task:delete permission)
+DELETE http://localhost:8080/api/v1/tasks/{{user_task_id}}
+Authorization: Bearer {{user_token}}
+
+###
+
+### [ADMIN] Delete admin task — expect: 204
+DELETE http://localhost:8080/api/v1/tasks/{{admin_task_id}}
+Authorization: Bearer {{admin_token}}
+
+###

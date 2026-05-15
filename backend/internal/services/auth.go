@@ -18,6 +18,10 @@ type AuthService interface {
 	RefreshToken(db *gorm.DB, refreshToken string) (string, string, error)
 }
 
+// TokenExpiry is the lifetime for both the JWT access token and the refresh token.
+// All handlers must derive their expires_in from this constant so they stay in sync.
+const TokenExpiry = time.Hour
+
 type AuthServiceImpl struct {
 }
 
@@ -49,7 +53,7 @@ func (s *AuthServiceImpl) GenerateToken(db *gorm.DB, userID uuid.UUID) (string, 
 		return "", "", err
 	}
 
-	exp := time.Now().Add(time.Hour)
+	exp := time.Now().Add(TokenExpiry)
 
 	roleNames := make([]string, len(user.Roles))
 	permSet := make(map[string]bool)
@@ -82,7 +86,7 @@ func (s *AuthServiceImpl) GenerateToken(db *gorm.DB, userID uuid.UUID) (string, 
 		ID:           uuid.Must(uuid.NewV7()),
 		UserId:       userID,
 		RefreshToken: uuid.Must(uuid.NewV7()),
-		ExpiresAt:    time.Now().Add(time.Hour),
+		ExpiresAt:    time.Now().Add(TokenExpiry),
 	}
 	if err := db.Create(&token).Error; err != nil {
 		return "", "", err

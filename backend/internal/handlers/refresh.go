@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"time"
 
 	"task-manager/backend/internal/services"
 
@@ -38,6 +37,6 @@ func (h *RefreshHandler) Refresh(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"access_token":  accessToken,
 		"refresh_token": refreshToken,
-		"expires_in":    time.Now().Add(time.Hour * 24).Unix(),
+		"expires_in":    int(services.TokenExpiry.Seconds()),
 	})
 }
