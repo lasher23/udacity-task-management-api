@@ -94,6 +94,9 @@ func (s *AuthServiceImpl) RefreshToken(db *gorm.DB, tokenString string) (string,
 	if err := db.Where("refresh_token = ?", tokenString).First(&token).Error; err != nil {
 		return "", "", err
 	}
+	if token.ExpiresAt.Before(time.Now()) {
+		return "", "", errors.New("refresh token expired")
+	}
 
 	if err := db.Delete(&token).Error; err != nil {
 		return "", "", err
