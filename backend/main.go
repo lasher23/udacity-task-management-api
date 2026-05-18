@@ -66,13 +66,13 @@ func main() {
 		{
 			taskRoutes.POST("", middleware.Authorize(db, "task", "write", false), taskHandler.CreateTask)
 			taskRoutes.PUT("/:id", middleware.Authorize(db, "task", "write", true), taskHandler.UpdateTask)
-			taskRoutes.DELETE("/:id", middleware.Authorize(db, "task", "delete", false), taskHandler.DeleteTask)
+			taskRoutes.DELETE("/:id", middleware.Authorize(db, "task", "delete", true), taskHandler.DeleteTask)
 			taskRoutes.GET("/:id", middleware.Authorize(db, "task", "read", true), taskHandler.GetTaskByID)
 			taskRoutes.GET("", middleware.Authorize(db, "task", "read", false), taskHandler.GetTasks)
 		}
 		userRoutes := v1.Group("/users")
 		{
-			userRoutes.DELETE("/:user_id", middleware.Authorize(db, "user", "delete", false), userHandler.DeleteUser)
+			userRoutes.DELETE("/:user_id", middleware.Authorize(db, "user", "delete", true), userHandler.DeleteUser)
 			userRoutes.GET("", middleware.Authorize(db, "user", "read", false), userHandler.GetUsers)
 			userRoutes.GET("/:user_id/tasks", middleware.Authorize(db, "task", "read", true), taskHandler.GetTasksByUser)
 			userRoutes.GET("/profile", middleware.Authenticate(db), userHandler.GetUserProfile)

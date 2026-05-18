@@ -41,8 +41,8 @@ func Authorize(db *gorm.DB, resource, action string, withOwnership bool) gin.Han
 			return
 		}
 
+		isOwner := false
 		if withOwnership {
-			isOwner := false
 			if taskIDStr := c.Param("id"); taskIDStr != "" {
 				if taskID, err := uuid.FromString(taskIDStr); err == nil {
 					var task models.Task
@@ -55,39 +55,34 @@ func Authorize(db *gorm.DB, resource, action string, withOwnership bool) gin.Han
 				isOwner = true
 			}
 
-			if isOwner {
-				c.Set("reason", "owner")
-				c.Next()
-				return
-			}
-
 			// Letting admin role bypass ownership
+		outer:
 			for _, role := range user.Roles {
 				if role.Name == "admin" {
-					c.Set("reason", "admin")
-					c.Next()
-					return
+					isOwner = true
+					break outer
 				}
 			}
-
-			log.Printf("[AUTH] Access denied for user %v on %s (not owner, not admin)", userID, c.FullPath())
-			c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
-			c.Abort()
-			return
 		}
 
 		required := fmt.Sprintf("%s:%s", resource, action)
+		hasPermission := false
+	role:
 		for _, role := range user.Roles {
 			for _, p := range role.Permissions {
 				if p.Resource+":"+p.Action == required {
-					c.Set("reason", "permission")
-					c.Next()
-					return
+					hasPermission = true
+					break role
 				}
 			}
 		}
 
-		log.Printf("[AUTH] Access denied for user %v on %s (%s)", userID, c.FullPath(), required)
+		if (!withOwnership || isOwner) && hasPermission {
+			c.Next()
+			return
+		}
+
+		log.Printf("[AUTH] Access denied for user %v on %s (required=%s, hasPermission=%v, isOwner=%v)", userID, c.FullPath(), required, hasPermission, isOwner)
 		c.JSON(http.StatusForbidden, gin.H{"error": "access denied"})
 		c.Abort()
 	}
